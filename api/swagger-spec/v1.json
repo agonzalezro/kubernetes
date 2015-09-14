@@ -12123,6 +12123,10 @@
       "$ref": "v1.CephFSVolumeSource",
       "description": "CephFS represents a Ceph FS mount on the host that shares a pod's lifetime"
      },
+     "flocker": {
+      "$ref": "v1.FlockerVolumeSource",
+      "description": "Flocker represents a Flocker volume attached to a kubelet's host machine and exposed to the pod for its usage"
+     },
      "accessModes": {
       "type": "array",
       "items": {
@@ -12393,6 +12397,25 @@
      "readOnly": {
       "type": "boolean",
       "description": "Optional: Defaults to false (read/write). ReadOnly here will force the ReadOnly setting in VolumeMounts. More info: http://releases.k8s.io/HEAD/examples/cephfs/README.md#how-to-use-it"
+     }
+    }
+   },
+   "v1.FlockerVolumeSource": {
+    "id": "v1.FlockerVolumeSource",
+    "description": "FlockerVolumeSource represents a Flocker volume attached to a kubelet's host machine and exposed to the pod for its usage.",
+    "required": [
+     "host",
+     "port"
+    ],
+    "properties": {
+     "host": {
+      "type": "string",
+      "description": "Required: Address where your Flocker is running. Check http://docs.clusterhq.com for more information."
+     },
+     "port": {
+      "type": "integer",
+      "format": "int32",
+      "description": "Required: The port where the Flocker service is running."
      }
     }
    },

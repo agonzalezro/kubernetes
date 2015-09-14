@@ -30,6 +30,7 @@ import (
 	"k8s.io/kubernetes/pkg/volume/cinder"
 	"k8s.io/kubernetes/pkg/volume/downwardapi"
 	"k8s.io/kubernetes/pkg/volume/empty_dir"
+	"k8s.io/kubernetes/pkg/volume/flocker"
 	"k8s.io/kubernetes/pkg/volume/gce_pd"
 	"k8s.io/kubernetes/pkg/volume/git_repo"
 	"k8s.io/kubernetes/pkg/volume/glusterfs"
@@ -53,20 +54,25 @@ func ProbeVolumePlugins() []volume.VolumePlugin {
 	//
 	// Kubelet does not currently need to configure volume plugins.
 	// If/when it does, see kube-controller-manager/app/plugins.go for example of using volume.VolumeConfig
-	allPlugins = append(allPlugins, aws_ebs.ProbeVolumePlugins()...)
-	allPlugins = append(allPlugins, empty_dir.ProbeVolumePlugins()...)
-	allPlugins = append(allPlugins, gce_pd.ProbeVolumePlugins()...)
-	allPlugins = append(allPlugins, git_repo.ProbeVolumePlugins()...)
-	allPlugins = append(allPlugins, host_path.ProbeVolumePlugins(volume.VolumeConfig{})...)
-	allPlugins = append(allPlugins, nfs.ProbeVolumePlugins(volume.VolumeConfig{})...)
-	allPlugins = append(allPlugins, secret.ProbeVolumePlugins()...)
-	allPlugins = append(allPlugins, iscsi.ProbeVolumePlugins()...)
-	allPlugins = append(allPlugins, glusterfs.ProbeVolumePlugins()...)
-	allPlugins = append(allPlugins, persistent_claim.ProbeVolumePlugins()...)
-	allPlugins = append(allPlugins, rbd.ProbeVolumePlugins()...)
-	allPlugins = append(allPlugins, cinder.ProbeVolumePlugins()...)
-	allPlugins = append(allPlugins, cephfs.ProbeVolumePlugins()...)
-	allPlugins = append(allPlugins, downwardapi.ProbeVolumePlugins()...)
+	for _, plugins := range [][]volume.VolumePlugin{
+		aws_ebs.ProbeVolumePlugins(),
+		empty_dir.ProbeVolumePlugins(),
+		gce_pd.ProbeVolumePlugins(),
+		git_repo.ProbeVolumePlugins(),
+		host_path.ProbeVolumePlugins(volume.VolumeConfig{}),
+		nfs.ProbeVolumePlugins(volume.VolumeConfig{}),
+		secret.ProbeVolumePlugins(),
+		iscsi.ProbeVolumePlugins(),
+		glusterfs.ProbeVolumePlugins(),
+		persistent_claim.ProbeVolumePlugins(),
+		rbd.ProbeVolumePlugins(),
+		cinder.ProbeVolumePlugins(),
+		cephfs.ProbeVolumePlugins(),
+		downwardapi.ProbeVolumePlugins(),
+		flocker.ProbeVolumePlugins(),
+	} {
+		allPlugins = append(allPlugins, plugins...)
+	}
 	return allPlugins
 }
 
