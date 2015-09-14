@@ -336,6 +336,8 @@ type PersistentVolumeSource struct {
 	Cinder *CinderVolumeSource `json:"cinder,omitempty"`
 	// CephFS represents a Ceph FS mount on the host that shares a pod's lifetime
 	CephFS *CephFSVolumeSource `json:"cephfs,omitempty"`
+	// Flocker represents a Flocker volume attached to a kubelet's host machine and exposed to the pod for its usage
+	Flocker *FlockerVolumeSource `json:"flocker,omitempty"`
 }
 
 // PersistentVolume (PV) is a storage resource provisioned by an administrator.
@@ -620,6 +622,14 @@ type CephFSVolumeSource struct {
 	// the ReadOnly setting in VolumeMounts.
 	// More info: http://releases.k8s.io/HEAD/examples/cephfs/README.md#how-to-use-it
 	ReadOnly bool `json:"readOnly,omitempty"`
+}
+
+// FlockerVolumeSource represents a Flocker volume attached to a kubelet's host machine and exposed to the pod for its usage.
+type FlockerVolumeSource struct {
+	// Required: Address where your Flocker is running. Check http://docs.clusterhq.com for more information.
+	Host string `json:"host"`
+	// Required: The port where the Flocker service is running.
+	Port int `json:"port"`
 }
 
 const (

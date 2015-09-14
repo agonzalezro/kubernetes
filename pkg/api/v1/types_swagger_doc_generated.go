@@ -377,6 +377,16 @@ func (ExecAction) SwaggerDoc() map[string]string {
 	return map_ExecAction
 }
 
+var map_FlockerVolumeSource = map[string]string{
+	"":     "FlockerVolumeSource represents a Flocker volume attached to a kubelet's host machine and exposed to the pod for its usage.",
+	"host": "Required: Address where your Flocker is running. Check http://docs.clusterhq.com for more information.",
+	"port": "Required: The port where the Flocker service is running.",
+}
+
+func (FlockerVolumeSource) SwaggerDoc() map[string]string {
+	return map_FlockerVolumeSource
+}
+
 var map_GCEPersistentDiskVolumeSource = map[string]string{
 	"":          "GCEPersistentDiskVolumeSource represents a Persistent Disk resource in Google Compute Engine.\n\nA GCE PD must exist and be formatted before mounting to a container. The disk must also be in the same GCE project and zone as the kubelet. A GCE PD can only be mounted as read/write once.",
 	"pdName":    "Unique name of the PD resource in GCE. Used to identify the disk in GCE. More info: http://releases.k8s.io/HEAD/docs/user-guide/volumes.md#gcepersistentdisk",
@@ -834,6 +844,7 @@ var map_PersistentVolumeSource = map[string]string{
 	"iscsi":                "ISCSI represents an ISCSI Disk resource that is attached to a kubelet's host machine and then exposed to the pod. Provisioned by an admin.",
 	"cinder":               "Cinder represents a cinder volume attached and mounted on kubelets host machine More info: http://releases.k8s.io/HEAD/examples/mysql-cinder-pd/README.md",
 	"cephfs":               "CephFS represents a Ceph FS mount on the host that shares a pod's lifetime",
+	"flocker":              "Flocker represents a Flocker volume attached to a kubelet's host machine and exposed to the pod for its usage",
 }
 
 func (PersistentVolumeSource) SwaggerDoc() map[string]string {
