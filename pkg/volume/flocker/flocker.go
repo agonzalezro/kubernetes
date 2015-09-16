@@ -1,6 +1,10 @@
 package flocker
 
 import (
+	"bytes"
+	"encoding/json"
+	"net/http"
+
 	"k8s.io/kubernetes/pkg/api"
 	"k8s.io/kubernetes/pkg/types"
 	"k8s.io/kubernetes/pkg/util/exec"
@@ -78,14 +82,8 @@ func (b flockerBuilder) SetUp() error {
 }
 
 func (b flockerBuilder) SetUpAt(dir string) error {
-	payload := struct {
-		DatasetID `json:"dataset_id"`
-		Primary   `json:"primary"`
-	}{
-		dir,
-		b.pod.UID,
-	}
-
+	c := newFlockerClient()
+	return c.createVolume(string(b.pod.UID), dir)
 }
 
 func (b flockerBuilder) IsReadOnly() bool {
@@ -93,3 +91,47 @@ func (b flockerBuilder) IsReadOnly() bool {
 }
 
 // TODO: -- CUT HERE --
+
+type flockerClient struct {
+	*http.Client
+}
+
+func newFlockerClient() *flockerClient {
+	return &flockerClient{&http.Client{}}
+}
+
+func (c flockerClient) post(url string, payload interface{}) (*http.Response, error) {
+	b, err := json.Marshal(payload)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("POST", url, bytes.NewBuffer(b))
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("Content-Type", "application/json")
+
+	// REMEMBER TO CLOSE THE BODY IN THE OUTSIDE FUNCTION
+	return c.Do(req)
+}
+
+func (c flockerClient) createVolume(primary, datasetID string) error {
+	payload := struct {
+		Primary   string `json:"primary"`
+		DatasetID string `json:"dataset_id"`
+	}{
+		primary,
+		datasetID,
+	}
+
+	resp, err := c.post(URL_HERE, payload)
+	if err != nil {
+		resp.Body.Close()
+		return err
+	}
+	defer resp.Body.Close()
+	// READ JSON RESPONSE FROM FLOCKER
+
+	return nil
+}
