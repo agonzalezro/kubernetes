@@ -54,15 +54,13 @@ func (p *flockerPlugin) getFlockerVolumeSource(spec *volume.Spec) (*api.FlockerV
 	return spec.PersistentVolume.Spec.Flocker, readOnly
 }
 
-func (p *flockerPlugin) NewBuilder(
-	spec *volume.Spec, pod *api.Pod, opts volume.VolumeOptions, mounter mount.Interface,
-) (volume.Builder, error) {
+func (p *flockerPlugin) NewBuilder(spec *volume.Spec, pod *api.Pod, opts volume.VolumeOptions) (volume.Builder, error) {
 	source, readOnly := p.getFlockerVolumeSource(spec)
 	builder := flockerBuilder{
 		flocker: &flocker{
 			volName: source.Name,
 			pod:     pod,
-			mounter: mounter,
+			mounter: p.host.GetMounter(),
 			plugin:  p,
 		},
 		exe:      exec.New(),
@@ -72,9 +70,7 @@ func (p *flockerPlugin) NewBuilder(
 	return &builder, nil
 }
 
-func (p *flockerPlugin) NewCleaner(
-	volName string, podUID types.UID, mounter mount.Interface,
-) (volume.Cleaner, error) {
+func (p *flockerPlugin) NewCleaner(volName string, podUID types.UID) (volume.Cleaner, error) {
 	return nil, nil
 }
 
