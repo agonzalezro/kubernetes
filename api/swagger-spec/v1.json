@@ -12404,18 +12404,15 @@
     "id": "v1.FlockerVolumeSource",
     "description": "FlockerVolumeSource represents a Flocker volume attached to a kubelet's host machine and exposed to the pod for its usage.",
     "required": [
-     "host",
-     "port"
+     "endpoints",
+     "dataset_id"
     ],
     "properties": {
-     "host": {
-      "type": "string",
-      "description": "Required: Address where your Flocker is running. Check http://docs.clusterhq.com for more information."
+     "endpoints": {
+      "type": "string"
      },
-     "port": {
-      "type": "integer",
-      "format": "int32",
-      "description": "Required: The port where the Flocker service is running."
+     "dataset_id": {
+      "type": "string"
      }
     }
    },
@@ -12625,6 +12622,9 @@
      "cephfs": {
       "$ref": "v1.CephFSVolumeSource",
       "description": "CephFS represents a Ceph FS mount on the host that shares a pod's lifetime"
+     },
+     "flocker": {
+      "$ref": "v1.FlockerVolumeSource"
      },
      "downwardAPI": {
       "$ref": "v1.DownwardAPIVolumeSource",

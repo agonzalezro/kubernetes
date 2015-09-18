@@ -250,6 +250,9 @@ type VolumeSource struct {
 	// CephFS represents a Ceph FS mount on the host that shares a pod's lifetime
 	CephFS *CephFSVolumeSource `json:"cephfs,omitempty"`
 
+	// Flocker represents a Flocker volume attached to a kubelet's host machine and exposed to the pod for its usage
+	Flocker *FlockerVolumeSource `json:"flocker,omitempty"`
+
 	// DownwardAPI represents downward API about the pod that should populate this volume
 	DownwardAPI *DownwardAPIVolumeSource `json:"downwardAPI,omitempty"`
 }
@@ -589,10 +592,11 @@ type CephFSVolumeSource struct {
 
 // FlockerVolumeSource represents a Flocker volume attached to a kubelet's host machine and exposed to the pod for its usage.
 type FlockerVolumeSource struct {
-	// Required: Address where your Flocker is running. Check http://docs.clusterhq.com for more information.
-	Host string `json:"host"`
-	// Required: The port where the Flocker service is running.
-	Port int `json:"port"`
+	// Required: EndpointsName is the endpoint name that details Flocker topology
+	EndpointsName string `json:"endpoints"`
+
+	// Optional: TODO, I am not pretty sure that this is needed
+	DatasetID string `json:"dataset_id"`
 }
 
 const (

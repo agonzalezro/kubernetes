@@ -37,17 +37,25 @@ func (p flockerPlugin) CanSupport(spec *volume.Spec) bool {
 	return spec.PersistentVolume != nil
 }
 
-func (p *flockerPlugin) getFlockerVolumeSource(spec *volume.Spec) *api.FlockerVolumeSource {
+func (p *flockerPlugin) getFlockerVolumeSource(spec *volume.Spec) (*api.FlockerVolumeSource, bool) {
+	// AFAIK this will always be r/w, but perhaps for the future it will be needed
+	readOnly := false
+
 	if spec.Volume != nil && spec.Volume.Flocker != nil {
-		return spec.Volume.Flocker
+		return spec.Volume.Flocker, readOnly
 	}
-	return spec.PersistentVolume.Spec.Flocker
+	return spec.PersistentVolume.Spec.Flocker, readOnly
 }
 
 func (p *flockerPlugin) NewBuilder(
 	spec *volume.Spec, pod *api.Pod, opts volume.VolumeOptions, mounter mount.Interface,
 ) (volume.Builder, error) {
-	source := p.getFlockerVolumeSource(spec)
+	source, readOnly := p.getFlockerVolumeSource(spec)
+	ep, err := p.host.GetKubeClient().Endpoints(pod.Namespace).Get(source.EndpointsName)
+	if err != nil {
+		return nil, err
+	}
+
 	builder := flockerBuilder{
 		flocker: &flocker{
 			volName:   spec.Name(),
@@ -56,8 +64,10 @@ func (p *flockerPlugin) NewBuilder(
 			mounter:   mounter,
 			plugin:    p,
 		},
-		exe:  exec.New(),
-		opts: opts,
+		hosts:    ep,
+		exe:      exec.New(),
+		opts:     opts,
+		readOnly: readOnly,
 	}
 	return &builder, nil
 }
@@ -78,14 +88,16 @@ type flocker struct {
 	plugin    *flockerPlugin
 }
 
-func (f flockerBuilder) GetPath() string {
-	return f.volName
-}
-
 type flockerBuilder struct {
 	*flocker
-	exe  exec.Interface
-	opts volume.VolumeOptions
+	exe      exec.Interface
+	opts     volume.VolumeOptions
+	hosts    *api.Endpoints
+	readOnly bool
+}
+
+func (f flockerBuilder) GetPath() string {
+	return f.volName
 }
 
 func (b flockerBuilder) SetUp() error {
@@ -100,7 +112,7 @@ func (b flockerBuilder) SetUpAt(dir string) error {
 }
 
 func (b flockerBuilder) IsReadOnly() bool {
-	return false
+	return b.readOnly
 }
 
 // TODO: -- CUT HERE --
