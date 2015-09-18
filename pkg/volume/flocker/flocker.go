@@ -37,15 +37,24 @@ func (p flockerPlugin) CanSupport(spec *volume.Spec) bool {
 	return spec.PersistentVolume != nil
 }
 
+func (p *flockerPlugin) getFlockerVolumeSource(spec *volume.Spec) *api.FlockerVolumeSource {
+	if spec.Volume != nil && spec.Volume.Flocker != nil {
+		return spec.Volume.Flocker
+	}
+	return spec.PersistentVolume.Spec.Flocker
+}
+
 func (p *flockerPlugin) NewBuilder(
 	spec *volume.Spec, pod *api.Pod, opts volume.VolumeOptions, mounter mount.Interface,
 ) (volume.Builder, error) {
+	source := p.getFlockerVolumeSource(spec)
 	builder := flockerBuilder{
 		flocker: &flocker{
-			volName: spec.Name(),
-			pod:     pod,
-			mounter: mounter,
-			plugin:  p,
+			volName:   spec.Name(),
+			datasetID: source.DatasetID,
+			pod:       pod,
+			mounter:   mounter,
+			plugin:    p,
 		},
 		exe:  exec.New(),
 		opts: opts,
@@ -62,10 +71,11 @@ func (p *flockerPlugin) NewCleaner(
 // TODO: -- CUT HERE --
 
 type flocker struct {
-	volName string
-	pod     *api.Pod
-	mounter mount.Interface
-	plugin  *flockerPlugin
+	volName   string
+	datasetID string
+	pod       *api.Pod
+	mounter   mount.Interface
+	plugin    *flockerPlugin
 }
 
 func (f flockerBuilder) GetPath() string {
@@ -102,8 +112,8 @@ const (
 	// TODO: From https://github.com/ClusterHQ/flocker-docker-plugin/blob/master/flockerdockerplugin/adapter.py#L18
 	defaultVolumeSize = 107374182400
 
-	keyFile  = "/etc/flocker/api.key"
-	certFile = "/etc/flocker/api.crt"
+	keyFile  = "/etc/flocker/apiuser.key"
+	certFile = "/etc/flocker/apiuser.crt"
 	caFile   = "/etc/flocker/cluster.crt"
 )
 
