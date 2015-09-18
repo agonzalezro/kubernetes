@@ -7,6 +7,8 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"os"
+	"strconv"
 	"strings"
 	"time"
 
@@ -54,11 +56,10 @@ func (p *flockerPlugin) NewBuilder(
 	source, readOnly := p.getFlockerVolumeSource(spec)
 	builder := flockerBuilder{
 		flocker: &flocker{
-			volName:   spec.Name(),
-			datasetID: source.DatasetID,
-			pod:       pod,
-			mounter:   mounter,
-			plugin:    p,
+			volName: source.Name,
+			pod:     pod,
+			mounter: mounter,
+			plugin:  p,
 		},
 		exe:      exec.New(),
 		opts:     opts,
@@ -99,9 +100,12 @@ func (b flockerBuilder) SetUp() error {
 }
 
 func (b flockerBuilder) SetUpAt(dir string) error {
-	c := newFlockerClient(b.pod)
+	c, err := newFlockerClient(b.pod)
+	if err != nil {
+		return err
+	}
 	// The _ is the path, I don't think it's needed for anything here
-	_, err := c.createVolume(dir)
+	_, err = c.createVolume(dir)
 	return err
 }
 
@@ -112,9 +116,6 @@ func (b flockerBuilder) IsReadOnly() bool {
 // TODO: -- CUT HERE --
 
 const (
-	controlHost = "172.16.255.250"
-	controlPort = 4523
-
 	// From https://github.com/ClusterHQ/flocker-docker-plugin/blob/master/flockerdockerplugin/adapter.py#L18
 	defaultVolumeSize = 107374182400
 
@@ -139,18 +140,28 @@ type flockerClient struct {
 	ca, key, cert string // kubelet hardcoded paths
 }
 
-func newFlockerClient(pod *api.Pod) *flockerClient {
+func newFlockerClient(pod *api.Pod) (*flockerClient, error) {
+	host := os.Getenv("FLOCKER_CONTROL_SERVICE_HOST")
+	if host == "" {
+		return nil, errors.New("The environment variable FLOCKER_CONTROL_SERVICE_HOST can't be empty")
+	}
+	portEnv := os.Getenv("FLOCKER_CONTROL_SERVICE_PORT")
+	port, err := strconv.Atoi(portEnv)
+	if err != nil {
+		return nil, fmt.Errorf("The environment variable FLOCKER_CONTROL_SERVICE_PORT needs to be a number, got: '%s'", portEnv)
+	}
+
 	return &flockerClient{
 		Client:      &http.Client{},
 		pod:         pod,
-		host:        controlHost,
-		port:        controlPort,
+		host:        host,
+		port:        port,
 		version:     "v1",
 		maximumSize: defaultVolumeSize,
 		ca:          caFile,
 		key:         keyFile,
 		cert:        certFile,
-	}
+	}, nil
 }
 
 func (c flockerClient) request(method, url string, payload interface{}) (*http.Response, error) {
