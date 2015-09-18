@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strings"
 	"time"
 
 	"k8s.io/kubernetes/pkg/api"
@@ -106,7 +107,7 @@ func (b flockerBuilder) SetUp() error {
 
 func (b flockerBuilder) SetUpAt(dir string) error {
 	c := newFlockerClient(b.pod)
-	// TODO: the _ is the path
+	// The _ is the path, I don't think it's needed for anything here
 	_, err := c.createVolume(dir)
 	return err
 }
@@ -121,12 +122,14 @@ const (
 	controlHost = "172.16.255.250"
 	controlPort = 4523
 
-	// TODO: From https://github.com/ClusterHQ/flocker-docker-plugin/blob/master/flockerdockerplugin/adapter.py#L18
+	// From https://github.com/ClusterHQ/flocker-docker-plugin/blob/master/flockerdockerplugin/adapter.py#L18
 	defaultVolumeSize = 107374182400
 
 	keyFile  = "/etc/flocker/apiuser.key"
 	certFile = "/etc/flocker/apiuser.crt"
 	caFile   = "/etc/flocker/cluster.crt"
+
+	timeoutWaitingForVolume = 30 * time.Second
 )
 
 type flockerClient struct {
@@ -287,7 +290,10 @@ func (c flockerClient) getState(datasetID string) (*state, error) {
  * 4) Wait until the dataset is ready
  */
 func (c flockerClient) createVolume(dir string) (path string, err error) {
-	// TODO: probably, datasetID needs to be clean, ex: remove /
+	if strings.Contains(dir, "/") {
+		return "", fmt.Errorf("The path (%s) can not contain the char '/'", dir)
+	}
+
 	payload := configurationPayload{
 		Primary:     string(c.pod.UID),
 		MaximumSize: defaultVolumeSize,
@@ -320,11 +326,10 @@ func (c flockerClient) createVolume(dir string) (path string, err error) {
 	}
 	defer resp.Body.Close()
 
-	if resp.StatusCode >= 300 { // TODO: possible 409 race condition
+	if resp.StatusCode >= 300 { // TODO: Possible 409 race condition if we create the volume twice pretty quickly
 		return "", fmt.Errorf("Expected: {1,2}xx creating the volume, got: %d", resp.StatusCode)
 	}
 
-	// TODO: not sure if reusing payload is a good idea, let's see
 	if err := json.NewDecoder(resp.Body).Decode(&payload); err != nil {
 		return "", nil
 	}
@@ -332,14 +337,14 @@ func (c flockerClient) createVolume(dir string) (path string, err error) {
 
 	// 4) Wait until the dataset is ready for usage, this can take a long a time
 	if state, err := c.getState(datasetID); err != nil {
-		// TODO: 30 is a magic number to wait for the volume
-		timeoutChan := time.NewTimer(30 * time.Second).C
+		timeoutChan := time.NewTimer(timeoutWaitingForVolume).C
 		tickChan := time.NewTicker(500 * time.Millisecond).C
 
 		for {
 			select {
 			case <-timeoutChan:
-				// TODO: a goroutine can be running at this point, but it's not a big deal
+				// A goroutine can be running at this point, but it's not a big
+				// deal. Worst case scenario we can use the context package
 				return "", err
 			case <-tickChan:
 				if state, err := c.getState(datasetID); err == nil {
