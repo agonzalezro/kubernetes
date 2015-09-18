@@ -32,14 +32,14 @@ func TestCanSupport(t *testing.T) {
 	plug, err := plugMgr.FindPluginByName(pluginName)
 	assert.Nil(err)
 
-	specs := []*volume.Spec{
+	specs := map[*volume.Spec]bool{
 		&volume.Spec{
 			Volume: &api.Volume{
 				VolumeSource: api.VolumeSource{
 					Flocker: &api.FlockerVolumeSource{},
 				},
 			},
-		},
+		}: true,
 		&volume.Spec{
 			PersistentVolume: &api.PersistentVolume{
 				Spec: api.PersistentVolumeSpec{
@@ -48,10 +48,16 @@ func TestCanSupport(t *testing.T) {
 					},
 				},
 			},
-		},
+		}: true,
+		&volume.Spec{
+			Volume: &api.Volume{
+				VolumeSource: api.VolumeSource{},
+			},
+		}: false,
 	}
 
-	for _, s := range specs {
-		assert.True(plug.CanSupport(s))
+	for spec, expected := range specs {
+		actual := plug.CanSupport(spec)
+		assert.Equal(expected, actual)
 	}
 }
