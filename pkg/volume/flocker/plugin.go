@@ -40,8 +40,8 @@ func (p flockerPlugin) Name() string {
 }
 
 func (p flockerPlugin) CanSupport(spec *volume.Spec) bool {
-	// PersistenVolume is the only spec supported for now
-	return spec.PersistentVolume != nil
+	return (spec.PersistentVolume != nil && spec.PersistentVolume.Spec.Flocker != nil) ||
+		(spec.Volume != nil && spec.Volume.Flocker != nil)
 }
 
 func (p *flockerPlugin) getFlockerVolumeSource(spec *volume.Spec) (*api.FlockerVolumeSource, bool) {
