@@ -52,11 +52,6 @@ func (p *flockerPlugin) NewBuilder(
 	spec *volume.Spec, pod *api.Pod, opts volume.VolumeOptions, mounter mount.Interface,
 ) (volume.Builder, error) {
 	source, readOnly := p.getFlockerVolumeSource(spec)
-	ep, err := p.host.GetKubeClient().Endpoints(pod.Namespace).Get(source.EndpointsName)
-	if err != nil {
-		return nil, err
-	}
-
 	builder := flockerBuilder{
 		flocker: &flocker{
 			volName:   spec.Name(),
@@ -65,7 +60,6 @@ func (p *flockerPlugin) NewBuilder(
 			mounter:   mounter,
 			plugin:    p,
 		},
-		hosts:    ep,
 		exe:      exec.New(),
 		opts:     opts,
 		readOnly: readOnly,
@@ -93,7 +87,6 @@ type flockerBuilder struct {
 	*flocker
 	exe      exec.Interface
 	opts     volume.VolumeOptions
-	hosts    *api.Endpoints
 	readOnly bool
 }
 
