@@ -16,7 +16,7 @@ import (
 
 const (
 	// From https://github.com/ClusterHQ/flocker-docker-plugin/blob/master/flockerdockerplugin/adapter.py#L18
-	defaultVolumeSize = 107374182400
+	defaultVolumeSize = float32(107374182400)
 
 	// Flocker connections are authenticated with TLS
 	// TODO: It can perhaps be stored somewhere else, or at least be
@@ -40,7 +40,7 @@ type flockerClient struct {
 	port    int
 	version string
 
-	maximumSize int
+	maximumSize float32
 
 	ca, key, cert string
 }
@@ -125,7 +125,7 @@ func (c flockerClient) getURL(path string) string {
 type configurationPayload struct {
 	Primary     string          `json:"primary"`
 	DatasetID   string          `json:"dataset_id"`
-	MaximumSize int             `json:"maximum_size"`
+	MaximumSize float32         `json:"maximum_size"`
 	Metadata    metadataPayload `json:"metadata"`
 }
 
