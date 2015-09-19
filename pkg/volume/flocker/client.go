@@ -45,10 +45,15 @@ type flockerClient struct {
 	ca, key, cert string
 }
 
+var (
+	errFlockerControlServiceHost = errors.New("The environment variable FLOCKER_CONTROL_SERVICE_HOST can't be empty")
+	errFlockerControlServicePort = errors.New("The environment variable FLOCKER_CONTROL_SERVICE_PORT must be a number")
+)
+
 /*
  * newFlockerClient creates a wrapper over http.Client to communicate with the
  * flocker control service. The location of this service is defined by the
- * following enviroment variables:
+ * following environment variables:
  *
  * - FLOCKER_CONTROL_SERVICE_HOST
  * - FLOCKER_CONTROL_SERVICE_PORT
@@ -56,12 +61,12 @@ type flockerClient struct {
 func newFlockerClient(pod *api.Pod) (*flockerClient, error) {
 	host := os.Getenv("FLOCKER_CONTROL_SERVICE_HOST")
 	if host == "" {
-		return nil, errors.New("The environment variable FLOCKER_CONTROL_SERVICE_HOST can't be empty")
+		return nil, errFlockerControlServiceHost
 	}
 	portEnv := os.Getenv("FLOCKER_CONTROL_SERVICE_PORT")
 	port, err := strconv.Atoi(portEnv)
 	if err != nil {
-		return nil, fmt.Errorf("The environment variable FLOCKER_CONTROL_SERVICE_PORT needs to be a number, got: '%s'", portEnv)
+		return nil, errFlockerControlServicePort
 	}
 
 	return &flockerClient{
