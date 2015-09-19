@@ -12404,14 +12404,10 @@
     "id": "v1.FlockerVolumeSource",
     "description": "FlockerVolumeSource represents a Flocker volume attached to a kubelet's host machine and exposed to the pod for its usage.",
     "required": [
-     "endpoints",
-     "dataset_id"
+     "name"
     ],
     "properties": {
-     "endpoints": {
-      "type": "string"
-     },
-     "dataset_id": {
+     "name": {
       "type": "string"
      }
     }
