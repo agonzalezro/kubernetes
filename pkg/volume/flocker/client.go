@@ -9,7 +9,6 @@ import (
 	"net/http"
 	"os"
 	"strconv"
-	"strings"
 	"time"
 
 	"k8s.io/kubernetes/pkg/api"
@@ -204,10 +203,6 @@ func (c flockerClient) getState(datasetID string) (*state, error) {
  * 4) Wait until the dataset is ready or the timeout was reached
  */
 func (c flockerClient) createVolume(dir string) (path string, err error) {
-	if strings.Contains(dir, "/") {
-		return "", fmt.Errorf("The path (%s) can not contain the char '/'", dir)
-	}
-
 	payload := configurationPayload{
 		Primary:     string(c.pod.UID),
 		MaximumSize: defaultVolumeSize,
