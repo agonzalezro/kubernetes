@@ -83,7 +83,7 @@ func (b flockerBuilder) SetUp() error {
 }
 
 func (b flockerBuilder) SetUpAt(dir string) error {
-	c, err := newFlockerClient(b.pod)
+	c, err := newFlockerClient(b.pod, true)
 	if err != nil {
 		return err
 	}

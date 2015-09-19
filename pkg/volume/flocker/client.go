@@ -22,33 +22,15 @@ const (
 	defaultVolumeSize = float32(107374182400)
 
 	// Flocker connections are authenticated with TLS
-	// TODO: It can perhaps be stored somewhere else, or at least be
-	// initialized with an env var and fallback to a default
-	keyFile    = "/etc/flocker/apiuser.key"
-	certFile   = "/etc/flocker/apiuser.crt"
-	caCertFile = "/etc/flocker/cluster.crt"
+	// TODO: It can perhaps be stored somewhere else.
+	defaultCACertFile     = "/etc/flocker/cluster.crt"
+	defaultClientKeyFile  = "/etc/flocker/apiuser.key"
+	defaultClientCertFile = "/etc/flocker/apiuser.crt"
 
 	// A volume can take a long time to be available, if we don't want
 	// Kubernetes to wait forever we need to stop trying after some time, that
 	// time is defined here
 	timeoutWaitingForVolume = 2 * time.Minute
-)
-
-type flockerClient struct {
-	*http.Client
-
-	pod *api.Pod
-
-	host    string
-	port    int
-	version string
-
-	maximumSize float32
-}
-
-var (
-	errFlockerControlServiceHost = errors.New("The environment variable FLOCKER_CONTROL_SERVICE_HOST can't be empty")
-	errFlockerControlServicePort = errors.New("The environment variable FLOCKER_CONTROL_SERVICE_PORT must be a number")
 )
 
 func newTLSClient(caCertPath, keyPath, certPath string) (*http.Client, error) {
@@ -76,6 +58,23 @@ func newTLSClient(caCertPath, keyPath, certPath string) (*http.Client, error) {
 	return &http.Client{Transport: transport}, nil
 }
 
+type flockerClient struct {
+	*http.Client
+
+	pod *api.Pod
+
+	host    string
+	port    int
+	version string
+
+	maximumSize float32
+}
+
+var (
+	errFlockerControlServiceHost = errors.New("The environment variable FLOCKER_CONTROL_SERVICE_HOST can't be empty")
+	errFlockerControlServicePort = errors.New("The environment variable FLOCKER_CONTROL_SERVICE_PORT must be a number")
+)
+
 /*
  * newFlockerClient creates a wrapper over http.Client to communicate with the
  * flocker control service. The location of this service is defined by the
@@ -83,8 +82,15 @@ func newTLSClient(caCertPath, keyPath, certPath string) (*http.Client, error) {
  *
  * - FLOCKER_CONTROL_SERVICE_HOST
  * - FLOCKER_CONTROL_SERVICE_PORT
+ *
+ * If you are using the TLS client you can also specify where the cert files
+ * reside:
+ *
+ * - FLOCKER_CONTROL_SERVICE_CA_FILE
+ * - FLOCKER_CONTROL_SERVICE_CLIENT_KEY_FILE
+ * - FLOCKER_CONTROL_SERVICE_CLIENT_CERT_FILE
  */
-func newFlockerClient(pod *api.Pod) (*flockerClient, error) {
+func newFlockerClient(pod *api.Pod, useTLS bool) (*flockerClient, error) {
 	host := os.Getenv("FLOCKER_CONTROL_SERVICE_HOST")
 	if host == "" {
 		return nil, errFlockerControlServiceHost
@@ -95,9 +101,18 @@ func newFlockerClient(pod *api.Pod) (*flockerClient, error) {
 		return nil, errFlockerControlServicePort
 	}
 
-	client, err := newTLSClient(caCertFile, keyFile, certFile)
-	if err != nil {
-		return nil, err
+	var client *http.Client
+	if useTLS {
+		client, err = newTLSClient(
+			GetenvOrFallback("FLOCKER_CONTROL_SERVICE_CA_FILE", defaultCACertFile),
+			GetenvOrFallback("FLOCKER_CONTROL_SERVICE_CLIENT_KEY_FILE", defaultClientKeyFile),
+			GetenvOrFallback("FLOCKER_CONTROL_SERVICE_CLIENT_CERT_FILE", defaultClientCertFile),
+		)
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		client = &http.Client{}
 	}
 
 	return &flockerClient{

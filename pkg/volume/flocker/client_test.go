@@ -30,7 +30,7 @@ func TestNewFlockerClient(t *testing.T) {
 		os.Setenv("FLOCKER_CONTROL_SERVICE_HOST", envs[0])
 		os.Setenv("FLOCKER_CONTROL_SERVICE_PORT", envs[1])
 
-		_, err := newFlockerClient(pod)
+		_, err := newFlockerClient(pod, false)
 		assert.Equal(err, expectedErr)
 	}
 }
@@ -56,7 +56,7 @@ func TestPost(t *testing.T) {
 	}))
 	defer ts.Close()
 
-	c, err := newFlockerClient(&api.Pod{})
+	c, err := newFlockerClient(&api.Pod{}, false)
 	assert.Nil(err)
 
 	resp, err := c.post(ts.URL, payload{expectedPayload})
@@ -76,7 +76,7 @@ func TestGet(t *testing.T) {
 	}))
 	defer ts.Close()
 
-	c, err := newFlockerClient(&api.Pod{})
+	c, err := newFlockerClient(&api.Pod{}, false)
 	assert.Nil(err)
 
 	resp, err := c.get(ts.URL)
@@ -131,7 +131,7 @@ func TestGetURL(t *testing.T) {
 
 	os.Setenv("FLOCKER_CONTROL_SERVICE_HOST", "host")
 	os.Setenv("FLOCKER_CONTROL_SERVICE_PORT", "42")
-	c, err := newFlockerClient(&api.Pod{})
+	c, err := newFlockerClient(&api.Pod{}, false)
 	assert.Nil(err)
 
 	url := c.getURL("test")
