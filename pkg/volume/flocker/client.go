@@ -29,7 +29,7 @@ const (
 	// A volume can take a long time to be available, if we don't want
 	// Kubernetes to wait forever we need to stop trying after some time, that
 	// time is defined here
-	timeoutWaitingForVolume = 60 * time.Second
+	timeoutWaitingForVolume = 2 * time.Minute
 )
 
 type flockerClient struct {
@@ -143,30 +143,28 @@ type statePayload struct {
 	*state
 }
 
-// findDatasetIDByNameInConfigurationsPayload returns the dataset_id if it was
-// found in the payload, otherwise it will return an error.
-//
-// TODO: this function needs renaming.
-func (c flockerClient) findDatasetIDByNameInConfigurationsPayload(body io.ReadCloser, name string) (dataset_id string, err error) {
-	var result []configurationPayload
-	if err := json.NewDecoder(body).Decode(&result); err != nil {
-		for _, r := range result {
+// findIDInConfigurationsPayload returns the datasetID if it was found in the
+// configurations payload, otherwise it will return an error.
+func (c flockerClient) findIDInConfigurationsPayload(body io.ReadCloser, name string) (datasetID string, err error) {
+	var configurations []configurationPayload
+	if err = json.NewDecoder(body).Decode(&configurations); err == nil {
+		for _, r := range configurations {
 			if r.Metadata.Name == name {
 				return r.DatasetID, nil
 			}
 		}
+		return "", errors.New("Configuration not found by Name")
 	}
-	return "", errors.New("Configuration not found by Name")
+	return "", err
 }
 
-// findStateByDatasetIDInStatesPayload returns the path of the given datasetID,
-// in case the path is not found it returns an error.
-//
-// TODO: this function needs renaming.
-func (c flockerClient) findStateByDatasetIDInStatesPayload(body io.ReadCloser, datasetID string) (path string, err error) {
-	var result []statePayload
-	if err = json.NewDecoder(body).Decode(&result); err != nil {
-		for _, r := range result {
+// findPathInStatesPayload returns the path of the given datasetID if it was
+// found in the states payload. In case the path is not found it returns an
+// error.
+func (c flockerClient) findPathInStatesPayload(body io.ReadCloser, datasetID string) (path string, err error) {
+	var states []statePayload
+	if err = json.NewDecoder(body).Decode(&states); err == nil {
+		for _, r := range states {
 			if r.DatasetID == datasetID {
 				return r.Path, nil
 			}
@@ -185,7 +183,7 @@ func (c flockerClient) getState(datasetID string) (*state, error) {
 		return nil, err
 	}
 
-	path, err := c.findStateByDatasetIDInStatesPayload(resp.Body, datasetID)
+	path, err := c.findPathInStatesPayload(resp.Body, datasetID)
 	if err != nil {
 		return nil, err
 	}
@@ -226,7 +224,7 @@ func (c flockerClient) createVolume(dir string) (path string, err error) {
 	}
 	defer resp.Body.Close()
 
-	if datasetID, err := c.findDatasetIDByNameInConfigurationsPayload(resp.Body, dir); err == nil {
+	if datasetID, err := c.findIDInConfigurationsPayload(resp.Body, dir); err == nil {
 		state, err := c.getState(datasetID)
 		if err != nil {
 			return "", err
