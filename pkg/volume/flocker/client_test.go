@@ -103,6 +103,16 @@ func TestFindIDInConfigurationsPayload(t *testing.T) {
 	)
 	assert.Nil(err)
 	assert.Equal(id, expected)
+
+	id, err = c.findIDInConfigurationsPayload(
+		ioutil.NopCloser(bytes.NewBufferString(payload)), "it will not be found",
+	)
+	assert.NotNil(err)
+
+	id, err = c.findIDInConfigurationsPayload(
+		ioutil.NopCloser(bytes.NewBufferString("invalid { json")), "",
+	)
+	assert.NotNil(err)
 }
 
 func TestFindPathInStatesPayload(t *testing.T) {
@@ -123,6 +133,16 @@ func TestFindPathInStatesPayload(t *testing.T) {
 	)
 	assert.Nil(err)
 	assert.Equal(path, expected)
+
+	path, err = c.findPathInStatesPayload(
+		ioutil.NopCloser(bytes.NewBufferString(payload)), "this is not going to be there",
+	)
+	assert.NotNil(err)
+
+	path, err = c.findPathInStatesPayload(
+		ioutil.NopCloser(bytes.NewBufferString("not even } json")), "",
+	)
+	assert.NotNil(err)
 }
 
 func TestGetURL(t *testing.T) {

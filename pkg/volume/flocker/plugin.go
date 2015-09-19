@@ -74,8 +74,8 @@ func (p *flockerPlugin) NewCleaner(volName string, podUID types.UID) (volume.Cle
 	return nil, nil
 }
 
-func (f flockerBuilder) GetPath() string {
-	return f.volName
+func (b flockerBuilder) GetPath() string {
+	return b.flocker.volName
 }
 
 func (b flockerBuilder) SetUp() error {
