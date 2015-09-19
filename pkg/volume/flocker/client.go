@@ -2,10 +2,13 @@ package flocker
 
 import (
 	"bytes"
+	"crypto/tls"
+	"crypto/x509"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"net/http"
 	"os"
 	"strconv"
@@ -21,9 +24,9 @@ const (
 	// Flocker connections are authenticated with TLS
 	// TODO: It can perhaps be stored somewhere else, or at least be
 	// initialized with an env var and fallback to a default
-	keyFile  = "/etc/flocker/apiuser.key"
-	certFile = "/etc/flocker/apiuser.crt"
-	caFile   = "/etc/flocker/cluster.crt"
+	keyFile    = "/etc/flocker/apiuser.key"
+	certFile   = "/etc/flocker/apiuser.crt"
+	caCertFile = "/etc/flocker/cluster.crt"
 
 	// A volume can take a long time to be available, if we don't want
 	// Kubernetes to wait forever we need to stop trying after some time, that
@@ -41,14 +44,37 @@ type flockerClient struct {
 	version string
 
 	maximumSize float32
-
-	ca, key, cert string
 }
 
 var (
 	errFlockerControlServiceHost = errors.New("The environment variable FLOCKER_CONTROL_SERVICE_HOST can't be empty")
 	errFlockerControlServicePort = errors.New("The environment variable FLOCKER_CONTROL_SERVICE_PORT must be a number")
 )
+
+func newTLSClient(caCertPath, keyPath, certPath string) (*http.Client, error) {
+	// Client certificate
+	cert, err := tls.LoadX509KeyPair(certPath, keyPath)
+	if err != nil {
+		return nil, err
+	}
+
+	// CA certificate
+	caCert, err := ioutil.ReadFile(caCertPath)
+	if err != nil {
+		return nil, err
+	}
+	caCertPool := x509.NewCertPool()
+	caCertPool.AppendCertsFromPEM(caCert)
+
+	tlsConfig := &tls.Config{
+		Certificates: []tls.Certificate{cert},
+		RootCAs:      caCertPool,
+	}
+	tlsConfig.BuildNameToCertificate()
+	transport := &http.Transport{TLSClientConfig: tlsConfig}
+
+	return &http.Client{Transport: transport}, nil
+}
 
 /*
  * newFlockerClient creates a wrapper over http.Client to communicate with the
@@ -69,16 +95,18 @@ func newFlockerClient(pod *api.Pod) (*flockerClient, error) {
 		return nil, errFlockerControlServicePort
 	}
 
+	client, err := newTLSClient(caCertFile, keyFile, certFile)
+	if err != nil {
+		return nil, err
+	}
+
 	return &flockerClient{
-		Client:      &http.Client{},
+		Client:      client,
 		pod:         pod,
 		host:        host,
 		port:        port,
 		version:     "v1",
 		maximumSize: defaultVolumeSize,
-		ca:          caFile,
-		key:         keyFile,
-		cert:        certFile,
 	}, nil
 }
 
