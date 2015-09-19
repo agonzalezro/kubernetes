@@ -171,7 +171,6 @@ func (c flockerClient) getURL(path string) string {
 }
 
 type configurationPayload struct {
-	Primary     string          `json:"primary"`
 	DatasetID   string          `json:"dataset_id"`
 	MaximumSize float32         `json:"maximum_size"`
 	Metadata    metadataPayload `json:"metadata"`
@@ -251,14 +250,6 @@ func (c flockerClient) getState(datasetID string) (*state, error) {
  * 4) Wait until the dataset is ready or the timeout was reached
  */
 func (c flockerClient) createVolume(dir string) (path string, err error) {
-	payload := configurationPayload{
-		Primary:     string(c.pod.UID),
-		MaximumSize: defaultVolumeSize,
-		Metadata: metadataPayload{
-			Name: dir,
-		},
-	}
-
 	// 1 & 2) Try to find the dataset if it was previously created
 	resp, err := c.get(c.getURL("configuration/datasets"))
 	if err != nil {
@@ -272,6 +263,13 @@ func (c flockerClient) createVolume(dir string) (path string, err error) {
 			return "", err
 		}
 		return state.Path, nil
+	}
+
+	payload := configurationPayload{
+		MaximumSize: defaultVolumeSize,
+		Metadata: metadataPayload{
+			Name: dir,
+		},
 	}
 
 	// 3) Create a new one if we get here
