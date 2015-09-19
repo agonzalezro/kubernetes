@@ -171,6 +171,7 @@ func (c flockerClient) getURL(path string) string {
 }
 
 type configurationPayload struct {
+	Primary     string          `json:"primary"`
 	DatasetID   string          `json:"dataset_id"`
 	MaximumSize float32         `json:"maximum_size"`
 	Metadata    metadataPayload `json:"metadata"`
@@ -266,6 +267,7 @@ func (c flockerClient) createVolume(dir string) (path string, err error) {
 	}
 
 	payload := configurationPayload{
+		Primary:     "1bc464e3-3354-4d2f-adf4-82f93ae0016f", // TODO: use /v1/state/nodes
 		MaximumSize: defaultVolumeSize,
 		Metadata: metadataPayload{
 			Name: dir,
