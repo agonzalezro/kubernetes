@@ -7,8 +7,6 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"os"
-	"strconv"
 	"time"
 
 	"k8s.io/kubernetes/pkg/api"
@@ -59,15 +57,17 @@ var (
  * - FLOCKER_CONTROL_SERVICE_PORT
  */
 func newFlockerClient(pod *api.Pod) (*flockerClient, error) {
-	host := os.Getenv("FLOCKER_CONTROL_SERVICE_HOST")
-	if host == "" {
-		return nil, errFlockerControlServiceHost
-	}
-	portEnv := os.Getenv("FLOCKER_CONTROL_SERVICE_PORT")
-	port, err := strconv.Atoi(portEnv)
-	if err != nil {
-		return nil, errFlockerControlServicePort
-	}
+	// host := os.Getenv("FLOCKER_CONTROL_SERVICE_HOST")
+	// if host == "" {
+	// 	return nil, errFlockerControlServiceHost
+	// }
+	// portEnv := os.Getenv("FLOCKER_CONTROL_SERVICE_PORT")
+	// port, err := strconv.Atoi(portEnv)
+	// if err != nil {
+	// 	return nil, errFlockerControlServicePort
+	// }
+	host := "1"
+	port := 123
 
 	return &flockerClient{
 		Client:      &http.Client{},
@@ -183,9 +183,9 @@ func (c flockerClient) findPathInStatesPayload(body io.ReadCloser, datasetID str
 func (c flockerClient) getState(datasetID string) (*state, error) {
 	resp, err := c.get(c.getURL("state/datasets"))
 	if err != nil {
-		resp.Body.Close()
 		return nil, err
 	}
+	defer resp.Body.Close()
 
 	path, err := c.findPathInStatesPayload(resp.Body, datasetID)
 	if err != nil {
@@ -219,7 +219,6 @@ func (c flockerClient) createVolume(dir string) (path string, err error) {
 	// 1 & 2) Try to find the dataset if it was previously created
 	resp, err := c.get(c.getURL("configuration/datasets"))
 	if err != nil {
-		resp.Body.Close()
 		return "", err
 	}
 	defer resp.Body.Close()
@@ -235,7 +234,6 @@ func (c flockerClient) createVolume(dir string) (path string, err error) {
 	// 3) Create a new one if we get here
 	resp, err = c.post(c.getURL("configuration/datasets"), payload)
 	if err != nil {
-		resp.Body.Close()
 		return "", err
 	}
 	defer resp.Body.Close()
