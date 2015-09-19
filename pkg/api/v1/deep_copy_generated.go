@@ -587,6 +587,11 @@ func deepCopy_v1_ExecAction(in ExecAction, out *ExecAction, c *conversion.Cloner
 	return nil
 }
 
+func deepCopy_v1_FlockerVolumeSource(in FlockerVolumeSource, out *FlockerVolumeSource, c *conversion.Cloner) error {
+	out.Name = in.Name
+	return nil
+}
+
 func deepCopy_v1_GCEPersistentDiskVolumeSource(in GCEPersistentDiskVolumeSource, out *GCEPersistentDiskVolumeSource, c *conversion.Cloner) error {
 	out.PDName = in.PDName
 	out.FSType = in.FSType
@@ -1286,6 +1291,14 @@ func deepCopy_v1_PersistentVolumeSource(in PersistentVolumeSource, out *Persiste
 		}
 	} else {
 		out.CephFS = nil
+	}
+	if in.Flocker != nil {
+		out.Flocker = new(FlockerVolumeSource)
+		if err := deepCopy_v1_FlockerVolumeSource(*in.Flocker, out.Flocker, c); err != nil {
+			return err
+		}
+	} else {
+		out.Flocker = nil
 	}
 	return nil
 }
@@ -2173,6 +2186,14 @@ func deepCopy_v1_VolumeSource(in VolumeSource, out *VolumeSource, c *conversion.
 	} else {
 		out.CephFS = nil
 	}
+	if in.Flocker != nil {
+		out.Flocker = new(FlockerVolumeSource)
+		if err := deepCopy_v1_FlockerVolumeSource(*in.Flocker, out.Flocker, c); err != nil {
+			return err
+		}
+	} else {
+		out.Flocker = nil
+	}
 	if in.DownwardAPI != nil {
 		out.DownwardAPI = new(DownwardAPIVolumeSource)
 		if err := deepCopy_v1_DownwardAPIVolumeSource(*in.DownwardAPI, out.DownwardAPI, c); err != nil {
@@ -2240,6 +2261,7 @@ func init() {
 		deepCopy_v1_EventList,
 		deepCopy_v1_EventSource,
 		deepCopy_v1_ExecAction,
+		deepCopy_v1_FlockerVolumeSource,
 		deepCopy_v1_GCEPersistentDiskVolumeSource,
 		deepCopy_v1_GitRepoVolumeSource,
 		deepCopy_v1_GlusterfsVolumeSource,

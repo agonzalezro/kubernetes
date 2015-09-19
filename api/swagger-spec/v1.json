@@ -12408,7 +12408,8 @@
     ],
     "properties": {
      "name": {
-      "type": "string"
+      "type": "string",
+      "description": "Required: the volume name. This is going to be store on metadata -\u003e name on the payload for Flocker"
      }
     }
    },
@@ -12620,7 +12621,8 @@
       "description": "CephFS represents a Ceph FS mount on the host that shares a pod's lifetime"
      },
      "flocker": {
-      "$ref": "v1.FlockerVolumeSource"
+      "$ref": "v1.FlockerVolumeSource",
+      "description": "Flocker represents a Flocker volume attached to a kubelet's host machine and exposed to the pod for its usage"
      },
      "downwardAPI": {
       "$ref": "v1.DownwardAPIVolumeSource",

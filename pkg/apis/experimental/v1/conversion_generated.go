@@ -288,6 +288,14 @@ func convert_api_ExecAction_To_v1_ExecAction(in *api.ExecAction, out *v1.ExecAct
 	return nil
 }
 
+func convert_api_FlockerVolumeSource_To_v1_FlockerVolumeSource(in *api.FlockerVolumeSource, out *v1.FlockerVolumeSource, s conversion.Scope) error {
+	if defaulting, found := s.DefaultingInterface(reflect.TypeOf(*in)); found {
+		defaulting.(func(*api.FlockerVolumeSource))(in)
+	}
+	out.Name = in.Name
+	return nil
+}
+
 func convert_api_GCEPersistentDiskVolumeSource_To_v1_GCEPersistentDiskVolumeSource(in *api.GCEPersistentDiskVolumeSource, out *v1.GCEPersistentDiskVolumeSource, s conversion.Scope) error {
 	if defaulting, found := s.DefaultingInterface(reflect.TypeOf(*in)); found {
 		defaulting.(func(*api.GCEPersistentDiskVolumeSource))(in)
@@ -766,6 +774,14 @@ func convert_api_VolumeSource_To_v1_VolumeSource(in *api.VolumeSource, out *v1.V
 	} else {
 		out.CephFS = nil
 	}
+	if in.Flocker != nil {
+		out.Flocker = new(v1.FlockerVolumeSource)
+		if err := convert_api_FlockerVolumeSource_To_v1_FlockerVolumeSource(in.Flocker, out.Flocker, s); err != nil {
+			return err
+		}
+	} else {
+		out.Flocker = nil
+	}
 	if in.DownwardAPI != nil {
 		out.DownwardAPI = new(v1.DownwardAPIVolumeSource)
 		if err := convert_api_DownwardAPIVolumeSource_To_v1_DownwardAPIVolumeSource(in.DownwardAPI, out.DownwardAPI, s); err != nil {
@@ -1034,6 +1050,14 @@ func convert_v1_ExecAction_To_api_ExecAction(in *v1.ExecAction, out *api.ExecAct
 	} else {
 		out.Command = nil
 	}
+	return nil
+}
+
+func convert_v1_FlockerVolumeSource_To_api_FlockerVolumeSource(in *v1.FlockerVolumeSource, out *api.FlockerVolumeSource, s conversion.Scope) error {
+	if defaulting, found := s.DefaultingInterface(reflect.TypeOf(*in)); found {
+		defaulting.(func(*v1.FlockerVolumeSource))(in)
+	}
+	out.Name = in.Name
 	return nil
 }
 
@@ -1514,6 +1538,14 @@ func convert_v1_VolumeSource_To_api_VolumeSource(in *v1.VolumeSource, out *api.V
 		}
 	} else {
 		out.CephFS = nil
+	}
+	if in.Flocker != nil {
+		out.Flocker = new(api.FlockerVolumeSource)
+		if err := convert_v1_FlockerVolumeSource_To_api_FlockerVolumeSource(in.Flocker, out.Flocker, s); err != nil {
+			return err
+		}
+	} else {
+		out.Flocker = nil
 	}
 	if in.DownwardAPI != nil {
 		out.DownwardAPI = new(api.DownwardAPIVolumeSource)
@@ -2572,6 +2604,7 @@ func init() {
 		convert_api_EnvVarSource_To_v1_EnvVarSource,
 		convert_api_EnvVar_To_v1_EnvVar,
 		convert_api_ExecAction_To_v1_ExecAction,
+		convert_api_FlockerVolumeSource_To_v1_FlockerVolumeSource,
 		convert_api_GCEPersistentDiskVolumeSource_To_v1_GCEPersistentDiskVolumeSource,
 		convert_api_GitRepoVolumeSource_To_v1_GitRepoVolumeSource,
 		convert_api_GlusterfsVolumeSource_To_v1_GlusterfsVolumeSource,
@@ -2643,6 +2676,7 @@ func init() {
 		convert_v1_EnvVarSource_To_api_EnvVarSource,
 		convert_v1_EnvVar_To_api_EnvVar,
 		convert_v1_ExecAction_To_api_ExecAction,
+		convert_v1_FlockerVolumeSource_To_api_FlockerVolumeSource,
 		convert_v1_GCEPersistentDiskVolumeSource_To_api_GCEPersistentDiskVolumeSource,
 		convert_v1_GitRepoVolumeSource_To_api_GitRepoVolumeSource,
 		convert_v1_GlusterfsVolumeSource_To_api_GlusterfsVolumeSource,

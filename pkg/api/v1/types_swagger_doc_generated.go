@@ -389,8 +389,7 @@ func (ExecAction) SwaggerDoc() map[string]string {
 
 var map_FlockerVolumeSource = map[string]string{
 	"":     "FlockerVolumeSource represents a Flocker volume attached to a kubelet's host machine and exposed to the pod for its usage.",
-	"host": "Required: Address where your Flocker is running. Check http://docs.clusterhq.com for more information.",
-	"port": "Required: The port where the Flocker service is running.",
+	"name": "Required: the volume name. This is going to be store on metadata -> name on the payload for Flocker",
 }
 
 func (FlockerVolumeSource) SwaggerDoc() map[string]string {
@@ -1386,6 +1385,7 @@ var map_VolumeSource = map[string]string{
 	"rbd":         "RBD represents a Rados Block Device mount on the host that shares a pod's lifetime. More info: http://releases.k8s.io/HEAD/examples/rbd/README.md",
 	"cinder":      "Cinder represents a cinder volume attached and mounted on kubelets host machine More info: http://releases.k8s.io/HEAD/examples/mysql-cinder-pd/README.md",
 	"cephfs":      "CephFS represents a Ceph FS mount on the host that shares a pod's lifetime",
+	"flocker":     "Flocker represents a Flocker volume attached to a kubelet's host machine and exposed to the pod for its usage",
 	"downwardAPI": "DownwardAPI represents downward API about the pod that should populate this volume",
 }
 
