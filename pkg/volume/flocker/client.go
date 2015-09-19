@@ -7,6 +7,8 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"os"
+	"strconv"
 	"time"
 
 	"k8s.io/kubernetes/pkg/api"
@@ -57,17 +59,15 @@ var (
  * - FLOCKER_CONTROL_SERVICE_PORT
  */
 func newFlockerClient(pod *api.Pod) (*flockerClient, error) {
-	// host := os.Getenv("FLOCKER_CONTROL_SERVICE_HOST")
-	// if host == "" {
-	// 	return nil, errFlockerControlServiceHost
-	// }
-	// portEnv := os.Getenv("FLOCKER_CONTROL_SERVICE_PORT")
-	// port, err := strconv.Atoi(portEnv)
-	// if err != nil {
-	// 	return nil, errFlockerControlServicePort
-	// }
-	host := "1"
-	port := 123
+	host := os.Getenv("FLOCKER_CONTROL_SERVICE_HOST")
+	if host == "" {
+		return nil, errFlockerControlServiceHost
+	}
+	portEnv := os.Getenv("FLOCKER_CONTROL_SERVICE_PORT")
+	port, err := strconv.Atoi(portEnv)
+	if err != nil {
+		return nil, errFlockerControlServicePort
+	}
 
 	return &flockerClient{
 		Client:      &http.Client{},

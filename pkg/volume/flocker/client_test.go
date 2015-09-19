@@ -124,3 +124,16 @@ func TestFindPathInStatesPayload(t *testing.T) {
 	assert.Nil(err)
 	assert.Equal(path, expected)
 }
+
+func TestGetURL(t *testing.T) {
+	const expected = "https://host:42/v1/test"
+	assert := assert.New(t)
+
+	os.Setenv("FLOCKER_CONTROL_SERVICE_HOST", "host")
+	os.Setenv("FLOCKER_CONTROL_SERVICE_PORT", "42")
+	c, err := newFlockerClient(&api.Pod{})
+	assert.Nil(err)
+
+	url := c.getURL("test")
+	assert.Equal(url, expected)
+}
