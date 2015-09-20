@@ -20,7 +20,11 @@ import (
 )
 
 func TestMaximumSizeIs1024Multiple(t *testing.T) {
-	assert.Equal(t, int(defaultVolumeSize%1024), 0)
+	assert := assert.New(t)
+
+	n, err := strconv.Atoi(string(defaultVolumeSize))
+	assert.Nil(err)
+	assert.Equal(n%1024, 0)
 }
 
 func TestNewFlockerClient(t *testing.T) {

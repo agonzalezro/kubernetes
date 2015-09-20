@@ -18,9 +18,8 @@ import (
 )
 
 const (
-	// TODO: change to 107374182400 as shown here:
-	// https://github.com/ClusterHQ/flocker-docker-plugin/blob/master/flockerdockerplugin/adapter.py#L18
-	defaultVolumeSize = ^uint32(0)/1024 + 1
+	// From https://github.com/ClusterHQ/flocker-docker-plugin/blob/master/flockerdockerplugin/adapter.py#L18
+	defaultVolumeSize = json.Number("107374182400")
 
 	// Flocker connections are authenticated with TLS
 	// TODO: It can perhaps be stored somewhere else.
@@ -82,7 +81,7 @@ type flockerClient struct {
 	port    int
 	version string
 
-	maximumSize uint32
+	maximumSize json.Number
 }
 
 var (
@@ -189,7 +188,7 @@ func (c flockerClient) getURL(path string) string {
 type configurationPayload struct {
 	Primary     string          `json:"primary"`
 	DatasetID   string          `json:"dataset_id,omitempty"`
-	MaximumSize uint32          `json:"maximum_size,omitempty"`
+	MaximumSize json.Number     `json:"maximum_size,omitempty"`
 	Metadata    metadataPayload `json:"metadata,omitempty"`
 }
 
@@ -284,7 +283,7 @@ func (c flockerClient) CreateVolume(dir string) error {
 
 	payload := configurationPayload{
 		Primary:     "1bc464e3-3354-4d2f-adf4-82f93ae0016f", // TODO: use /v1/state/nodes
-		MaximumSize: defaultVolumeSize,
+		MaximumSize: json.Number(defaultVolumeSize),
 		Metadata: metadataPayload{
 			Name: dir,
 		},
