@@ -20,7 +20,7 @@ import (
 const (
 	// TODO: change to 107374182400 as shown here:
 	// https://github.com/ClusterHQ/flocker-docker-plugin/blob/master/flockerdockerplugin/adapter.py#L18
-	defaultVolumeSize = ^uint32(0)
+	defaultVolumeSize = ^uint32(0)/1024 + 1
 
 	// Flocker connections are authenticated with TLS
 	// TODO: It can perhaps be stored somewhere else.

@@ -19,6 +19,10 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func TestMaximumSizeIs1024Multiple(t *testing.T) {
+	assert.Equal(t, int(defaultVolumeSize%1024), 0)
+}
+
 func TestNewFlockerClient(t *testing.T) {
 	assert := assert.New(t)
 
