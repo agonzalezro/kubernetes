@@ -198,8 +198,15 @@ func TestHappyPathCreateVolumeFromNonExistent(t *testing.T) {
 		case 2:
 			assert.Equal(r.Method, "POST")
 			assert.Equal(r.URL.Path, "/v1/configuration/datasets")
+
+			var c configurationPayload
+			err := json.NewDecoder(r.Body).Decode(&c)
+			assert.Nil(err)
+			assert.NotEqual(c.Primary, "") // TODO: improve after calling /v1/state/nodes instead using a hardcoded one
+			assert.Equal(c.MaximumSize, defaultVolumeSize)
+			assert.Equal(c.Metadata.Name, expected)
+
 			w.Write([]byte(`{"dataset_id": "123"}`))
-			// TODO: test payload
 		case 3:
 			assert.Equal(r.Method, "GET")
 			assert.Equal(r.URL.Path, "/v1/state/datasets")
