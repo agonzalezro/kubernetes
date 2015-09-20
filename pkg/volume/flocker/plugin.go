@@ -24,13 +24,6 @@ type flocker struct {
 	plugin    *flockerPlugin
 }
 
-type flockerBuilder struct {
-	*flocker
-	exe      exec.Interface
-	opts     volume.VolumeOptions
-	readOnly bool
-}
-
 func (p *flockerPlugin) Init(host volume.VolumeHost) {
 	p.host = host
 }
@@ -74,6 +67,13 @@ func (p *flockerPlugin) NewCleaner(volName string, podUID types.UID) (volume.Cle
 	return nil, nil
 }
 
+type flockerBuilder struct {
+	*flocker
+	exe      exec.Interface
+	opts     volume.VolumeOptions
+	readOnly bool
+}
+
 func (b flockerBuilder) GetPath() string {
 	return b.flocker.volName
 }
@@ -87,8 +87,8 @@ func (b flockerBuilder) SetUpAt(dir string) error {
 	if err != nil {
 		return err
 	}
-	// The _ is the path, I don't think it's needed for anything here
-	_, err = c.createVolume(dir)
+
+	err = c.CreateVolume(dir)
 	return err
 }
 

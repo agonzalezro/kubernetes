@@ -26,11 +26,14 @@ const (
 	defaultCACertFile     = "/etc/flocker/cluster.crt"
 	defaultClientKeyFile  = "/etc/flocker/apiuser.key"
 	defaultClientCertFile = "/etc/flocker/apiuser.crt"
+)
 
+var (
 	// A volume can take a long time to be available, if we don't want
 	// Kubernetes to wait forever we need to stop trying after some time, that
 	// time is defined here
 	timeoutWaitingForVolume = 2 * time.Minute
+	tickerWaitingForVolume  = 5 * time.Second
 )
 
 func newTLSClient(caCertPath, keyPath, certPath string) (*http.Client, error) {
@@ -58,11 +61,22 @@ func newTLSClient(caCertPath, keyPath, certPath string) (*http.Client, error) {
 	return &http.Client{Transport: transport}, nil
 }
 
+type httpDoer interface {
+	Do(*http.Request) (*http.Response, error)
+}
+
+// TODO: use this
+type flockerClientable interface {
+	httpDoer
+	CreateVolume(string) (string, error)
+}
+
 type flockerClient struct {
 	*http.Client
 
 	pod *api.Pod
 
+	schema  string
 	host    string
 	port    int
 	version string
@@ -118,6 +132,7 @@ func newFlockerClient(pod *api.Pod, useTLS bool) (*flockerClient, error) {
 	return &flockerClient{
 		Client:      client,
 		pod:         pod,
+		schema:      "https",
 		host:        host,
 		port:        port,
 		version:     "v1",
@@ -167,7 +182,7 @@ func (c flockerClient) get(url string) (*http.Response, error) {
 
 // getURL returns a full URI to the control service
 func (c flockerClient) getURL(path string) string {
-	return fmt.Sprintf("https://%s:%d/%s/%s", c.host, c.port, c.version, path)
+	return fmt.Sprintf("%s://%s:%d/%s/%s", c.schema, c.host, c.port, c.version, path)
 }
 
 type configurationPayload struct {
@@ -242,7 +257,7 @@ func (c flockerClient) getState(datasetID string) (*state, error) {
 }
 
 /*
- * createVolume creates a volume in Flocker and waits for it to be ready, this
+ * CreateVolume creates a volume in Flocker and waits for it to be ready, this
  * process is a little bit complex but follows this flow:
  *
  * 1) Get all the datasets
@@ -250,20 +265,20 @@ func (c flockerClient) getState(datasetID string) (*state, error) {
  * 3) If not, create a new one
  * 4) Wait until the dataset is ready or the timeout was reached
  */
-func (c flockerClient) createVolume(dir string) (path string, err error) {
+func (c flockerClient) CreateVolume(dir string) error {
 	// 1 & 2) Try to find the dataset if it was previously created
 	resp, err := c.get(c.getURL("configuration/datasets"))
 	if err != nil {
-		return "", err
+		return err
 	}
 	defer resp.Body.Close()
 
 	if datasetID, err := c.findIDInConfigurationsPayload(resp.Body, dir); err == nil {
-		state, err := c.getState(datasetID)
-		if err != nil {
-			return "", err
+		state, _ := c.getState(datasetID)
+		// If it fails here it can be recovered, this is why the error is ignored
+		if state.Path == dir {
+			return nil
 		}
-		return state.Path, nil
 	}
 
 	payload := configurationPayload{
@@ -277,37 +292,37 @@ func (c flockerClient) createVolume(dir string) (path string, err error) {
 	// 3) Create a new one if we get here
 	resp, err = c.post(c.getURL("configuration/datasets"), payload)
 	if err != nil {
-		return "", err
+		return err
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode >= 300 { // TODO: Possible 409 race condition if we create the volume twice pretty quickly
-		return "", fmt.Errorf("Expected: {1,2}xx creating the volume, got: %d", resp.StatusCode)
+		return fmt.Errorf("Expected: {1,2}xx creating the volume, got: %d", resp.StatusCode)
 	}
 
 	if err := json.NewDecoder(resp.Body).Decode(&payload); err != nil {
-		return "", nil
+		return err
 	}
 	datasetID := payload.DatasetID
 
 	// 4) Wait until the dataset is ready for usage, this can take a long a time
-	if state, err := c.getState(datasetID); err != nil {
+	if _, err := c.getState(datasetID); err != nil {
 		timeoutChan := time.NewTimer(timeoutWaitingForVolume).C
-		tickChan := time.NewTicker(5 * time.Second).C
+		tickChan := time.NewTicker(tickerWaitingForVolume).C
 
 		for {
 			select {
 			case <-timeoutChan:
 				// A goroutine can be running at this point, but it's not a big
 				// deal. Worst case scenario we can use the context package
-				return "", err
+				return err
 			case <-tickChan:
-				if state, err := c.getState(datasetID); err == nil {
-					return state.Path, nil
+				if _, err := c.getState(datasetID); err == nil {
+					return nil
 				}
 			}
 		}
 	} else {
-		return state.Path, nil
+		return nil
 	}
 }

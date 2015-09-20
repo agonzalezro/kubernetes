@@ -7,8 +7,12 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"os"
+	"strconv"
+	"strings"
 	"testing"
+	"time"
 
 	"k8s.io/kubernetes/pkg/api"
 
@@ -56,8 +60,7 @@ func TestPost(t *testing.T) {
 	}))
 	defer ts.Close()
 
-	c, err := newFlockerClient(&api.Pod{}, false)
-	assert.Nil(err)
+	c := flockerClient{Client: &http.Client{}}
 
 	resp, err := c.post(ts.URL, payload{expectedPayload})
 	assert.Nil(err)
@@ -76,8 +79,7 @@ func TestGet(t *testing.T) {
 	}))
 	defer ts.Close()
 
-	c, err := newFlockerClient(&api.Pod{}, false)
-	assert.Nil(err)
+	c := flockerClient{Client: &http.Client{}}
 
 	resp, err := c.get(ts.URL)
 	assert.Nil(err)
@@ -156,4 +158,95 @@ func TestGetURL(t *testing.T) {
 
 	url := c.getURL("test")
 	assert.Equal(url, expected)
+}
+
+func getHostAndPortFromTestServer(ts *httptest.Server) (string, int, error) {
+	tsURL, err := url.Parse(ts.URL)
+	if err != nil {
+		return "", 0, err
+	}
+
+	hostSplits := strings.Split(tsURL.Host, ":")
+
+	port, err := strconv.Atoi(hostSplits[1])
+	if err != nil {
+		return "", 0, nil
+	}
+	return hostSplits[0], port, nil
+}
+
+func setClientEnvVars(host string, port int) {
+	os.Setenv("FLOCKER_CONTROL_SERVICE_HOST", host)
+	os.Setenv("FLOCKER_CONTROL_SERVICE_PORT", strconv.Itoa(port))
+}
+
+func TestHappyPathCreateVolumeFromNonExistent(t *testing.T) {
+	const expected = "dir"
+
+	assert := assert.New(t)
+	var (
+		numCalls int
+		err      error
+	)
+
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		numCalls++
+		switch numCalls {
+		case 1:
+			assert.Equal(r.Method, "GET")
+			assert.Equal(r.URL.Path, "/v1/configuration/datasets")
+		case 2:
+			assert.Equal(r.Method, "POST")
+			assert.Equal(r.URL.Path, "/v1/configuration/datasets")
+			w.Write([]byte(`{"dataset_id": "123"}`))
+			// TODO: test payload
+		case 3:
+			assert.Equal(r.Method, "GET")
+			assert.Equal(r.URL.Path, "/v1/state/datasets")
+		case 4:
+			assert.Equal(r.Method, "GET")
+			assert.Equal(r.URL.Path, "/v1/state/datasets")
+			w.Write([]byte(fmt.Sprintf(`[{"dataset_id": "123", "path": "%s"}]`, expected)))
+		}
+	}))
+
+	host, port, err := getHostAndPortFromTestServer(ts)
+	assert.Nil(err)
+	setClientEnvVars(host, port)
+
+	c, err := newFlockerClient(&api.Pod{}, false)
+	assert.Nil(err)
+	c.schema = "http"
+	tickerWaitingForVolume = 1 * time.Millisecond // TODO: this is overriding globally
+
+	err = c.CreateVolume(expected)
+	assert.Nil(err)
+}
+
+func TestCreateVolumeThatAlreadyExists(t *testing.T) {
+	const expected = "dir"
+
+	assert := assert.New(t)
+	var numCalls int
+
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		numCalls++
+		switch numCalls {
+		case 1:
+			w.Write([]byte(fmt.Sprintf(`[{"dataset_id": "123", "metadata": {"name": "%s"}}]`, expected)))
+		case 2:
+			w.Write([]byte(fmt.Sprintf(`[{"dataset_id": "123", "path": "%s"}]`, expected)))
+		}
+	}))
+
+	host, port, err := getHostAndPortFromTestServer(ts)
+	assert.Nil(err)
+	setClientEnvVars(host, port)
+
+	c, err := newFlockerClient(&api.Pod{}, false)
+	assert.Nil(err)
+	c.schema = "http"
+
+	err = c.CreateVolume(expected)
+	assert.Nil(err)
 }
