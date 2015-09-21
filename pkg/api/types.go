@@ -579,8 +579,10 @@ type CephFSVolumeSource struct {
 
 // FlockerVolumeSource represents a Flocker volume attached to a kubelet's host machine and exposed to the pod for its usage.
 type FlockerVolumeSource struct {
-	// Required: the volume name. This is going to be store on metadata -> name on the payload for Flocker
-	Name string `json:"name"`
+	// Required: Flocker dataset name. This is going to be store on metadata -> name on the payload for Flocker
+	DatasetName string `json:"datasetName"`
+	// Optional: Flocker volume size (defaults to Flocker default of 100G)
+	Size int `json:"size,omitempty"`
 }
 
 // DownwardAPIVolumeSource represents a volume containing downward API info

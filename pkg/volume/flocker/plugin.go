@@ -51,7 +51,7 @@ func (p *flockerPlugin) NewBuilder(spec *volume.Spec, pod *api.Pod, opts volume.
 	source, readOnly := p.getFlockerVolumeSource(spec)
 	builder := flockerBuilder{
 		flocker: &flocker{
-			volName: source.Name,
+			volName: source.DatasetName,
 			pod:     pod,
 			mounter: p.host.GetMounter(),
 			plugin:  p,

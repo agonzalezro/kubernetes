@@ -505,11 +505,11 @@ func validateGlusterfs(glusterfs *api.GlusterfsVolumeSource) errs.ValidationErro
 
 func validateFlocker(flocker *api.FlockerVolumeSource) errs.ValidationErrorList {
 	allErrs := errs.ValidationErrorList{}
-	if flocker.Name == "" {
-		allErrs = append(allErrs, errs.NewFieldRequired("name"))
+	if flocker.DatasetName == "" {
+		allErrs = append(allErrs, errs.NewFieldRequired("datasetName"))
 	}
-	if strings.Contains(flocker.Name, "/") {
-		allErrs = append(allErrs, errs.NewFieldInvalid("name", flocker.Name, "must not contain '/'"))
+	if strings.Contains(flocker.DatasetName, "/") {
+		allErrs = append(allErrs, errs.NewFieldInvalid("datasetName", flocker.DatasetName, "must not contain '/'"))
 	}
 	return allErrs
 }

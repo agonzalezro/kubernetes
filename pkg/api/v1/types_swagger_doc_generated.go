@@ -388,8 +388,9 @@ func (ExecAction) SwaggerDoc() map[string]string {
 }
 
 var map_FlockerVolumeSource = map[string]string{
-	"":     "FlockerVolumeSource represents a Flocker volume attached to a kubelet's host machine and exposed to the pod for its usage.",
-	"name": "Required: the volume name. This is going to be store on metadata -> name on the payload for Flocker",
+	"":            "FlockerVolumeSource represents a Flocker volume attached to a kubelet's host machine and exposed to the pod for its usage.",
+	"datasetName": "Required: Flocker dataset name. This is going to be store on metadata -> name on the payload for Flocker",
+	"size":        "Optional: Flocker volume size (defaults to Flocker default of 100G)",
 }
 
 func (FlockerVolumeSource) SwaggerDoc() map[string]string {

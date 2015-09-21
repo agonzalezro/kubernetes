@@ -12404,12 +12404,16 @@
     "id": "v1.FlockerVolumeSource",
     "description": "FlockerVolumeSource represents a Flocker volume attached to a kubelet's host machine and exposed to the pod for its usage.",
     "required": [
-     "name"
+     "datasetName"
     ],
     "properties": {
-     "name": {
+     "datasetName": {
       "type": "string",
-      "description": "Required: the volume name. This is going to be store on metadata -\u003e name on the payload for Flocker"
+      "description": "Required: Flocker dataset name. This is going to be store on metadata -\u003e name on the payload for Flocker"
+     },
+     "size": {
+      "type": "integer",
+      "description": "Optional: Flocker volume size (defaults to Flocker default of 100G)."
      }
     }
    },
